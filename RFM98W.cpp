@@ -538,7 +538,7 @@ void RFM98W::lora_handleDio0Rise()
 
 /************ IO Methodes ************/
 
-int16_t RFM98W::lora_read(uint8_t* data) {
+int16_t RFM98W::lora_read() {
 	debugprint("lora_read()");
 
 	if (!lora_available()) {
@@ -550,7 +550,6 @@ int16_t RFM98W::lora_read(uint8_t* data) {
 	uint8_t reg;
 		reg = lora_readRegister(REG_FIFO);
 
-	*data = reg;
 	return reg;
 }
 
@@ -561,7 +560,7 @@ uint16_t RFM98W::lora_readBytes(uint8_t* buffer, uint16_t length)
 
 	debugprint("lora_readBytes()");
 
-	while( lora_read(&data) == SUCCESS)
+	while((data = lora_read()) >= 0)
 	{
 		if(i == length)
 		break;
@@ -599,7 +598,7 @@ void RFM98W::lora_setIdle() {
 }
 
 void RFM98W::lora_setSleep() {
-	debugprint("lora_setIdle()");
+	debugprint("lora_setSleep()");
 
 	lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_SLEEP);
 }

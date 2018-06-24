@@ -162,7 +162,7 @@ private:
     uint8_t lora_packetRssi();
     float lora_packetSnr();
     uint8_t lora_available();
-    int16_t lora_read(uint8_t* data);
+    int16_t lora_read();
     uint16_t lora_readBytes(uint8_t* buffer, uint16_t length);
     uint8_t lora_sendBytes(const uint8_t* buffer, uint8_t length);
     int16_t lora_peek();

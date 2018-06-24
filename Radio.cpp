@@ -32,7 +32,7 @@ uint32_t Radio::readData(uint8_t* data, uint32_t max_len){
 
 /* writes data to sendfifo and returns number of written bytes */
 uint32_t Radio::sendData(uint8_t* data, uint32_t len){
-    debugprint("readData()");
+    debugprint("sendData()");
     sendFifo_mutex.lock();
     uint32_t tx_len =  fifo_write_bytes(data, &sendFifo, len);
     sendFifo_mutex.unlock();
