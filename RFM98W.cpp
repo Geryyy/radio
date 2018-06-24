@@ -542,7 +542,7 @@ int16_t RFM98W::lora_read(uint8_t* data) {
 	debugprint("lora_read()");
 
 	if (!lora_available()) {
-		return ERROR;
+		return -1;
 	}
 
 	_packetIndex++;
@@ -551,7 +551,7 @@ int16_t RFM98W::lora_read(uint8_t* data) {
 		reg = lora_readRegister(REG_FIFO);
 
 	*data = reg;
-	return SUCCESS;
+	return reg;
 }
 
 uint16_t RFM98W::lora_readBytes(uint8_t* buffer, uint16_t length)
