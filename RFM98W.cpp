@@ -75,6 +75,9 @@ int RFM98W::serviceRadio(){
 			}
 		}
 	}
+	
+		startreceive();
+	
 	return ret;
 }
 
@@ -491,6 +494,11 @@ void RFM98W::lora_handleDio0Rise()
 	lora_writeRegister(REG_PAYLOAD_LENGTH, lora_getMessageSize());
 	irqFlags = lora_readRegister(REG_IRQ_FLAGS);
 	lora_writeRegister(REG_IRQ_FLAGS, irqFlags);
+
+	if(_debug){
+		printf("lora irqFlags: %d\n", irqFlags);
+	}
+
 	if (irqFlags & IRQ_RX_DONE_MASK)
 	{
 		if ((irqFlags & IRQ_PAYLOAD_CRC_ERROR_MASK) == 0)
@@ -540,7 +548,7 @@ void RFM98W::lora_handleDio0Rise()
 
 int16_t RFM98W::lora_read() {
 	debugprint("lora_read()");
-
+#warning implementation might be wrong..
 	if (!lora_available()) {
 		return -1;
 	}
