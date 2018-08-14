@@ -532,6 +532,7 @@ void RFM98W::lora_handleDio0Rise()
 	debugprint("lora_sendDataComplete()");
 	if(fifo_datasize(&sendFifo) < LORA_PACKET_LENGTH)
 		lora_setReceive(); //Goto receive after transmition
+#warning implementation might be wrong...
 }
 
 
