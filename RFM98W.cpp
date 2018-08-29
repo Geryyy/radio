@@ -199,8 +199,8 @@ int RFM98W::startreceive(){
 }
 
 int RFM98W::stopreceive(){
-	/* todo: implement */
-	return ERROR;
+	lora_setIdle();
+	return SUCCESS;
 }
 
 //###########################PRIVATE FUNCTIONS##############################################
