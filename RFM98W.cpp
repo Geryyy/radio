@@ -1,6 +1,11 @@
 #include "RFM98W.h"
 #include "globals.h"
 
+/* libs: 
+* https://github.com/sandeepmistry/arduino-LoRa/blob/master/src/LoRa.cpp
+* https://github.com/ARMmbed/mbed-semtech-lora-rf-drivers/blob/master/SX1276/SX1276_LoRaRadio.cpp
+*/
+
 RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout, SMPcallback_t frameReady_callback, SMPcallback_t rogueFrame_callback, bool debug)
 		: Radio(frameReady_callback, rogueFrame_callback, debug), spi(MOSI,MISO,SCK), cs(CS,1), reset(RESET,1), dio0(INTERRUPT)
 {
