@@ -48,6 +48,7 @@ int RFM98W::serviceRadio(){
 	uint32_t dataAvailable = fifo_datasize(&sendFifo);
 	uint32_t dataRead;
 	if (dataAvailable > 0) {
+		// stopreceive();
 		if (dataAvailable >= LORA_PACKET_LENGTH) {
 			ret = 0;
 			sendFifo_mutex.lock();
@@ -74,10 +75,13 @@ int RFM98W::serviceRadio(){
 				lora_sendBytes(loraPacket, LORA_PACKET_LENGTH);
 			}
 		}
+		// stopreceive();
 	}
-	
-		startreceive();
-	
+	else{	
+		
+		// stopreceive();
+	}
+	startreceive();
 	return ret;
 }
 
