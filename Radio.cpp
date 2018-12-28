@@ -1,5 +1,6 @@
 
 #include "Radio.h"
+#include "radiophy.h"
 #include "mbed.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,9 +8,13 @@
 
 
 
-Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, bool debug){
+
+Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, RadioPHY* radiophy, bool debug){
     _debug = debug;
     debugprint("Radio()");
+    // radio physical layer object
+    phy = radiophy;
+
     // SMP
     fifo_init(&fifo,buffer,sizeof(buffer));
     smp.buffer = &fifo;
@@ -31,18 +36,18 @@ uint32_t Radio::readData(uint8_t* data, uint32_t max_len){
     return rx_len;
 }
 
-/* writes data to sendfifo and returns number of written bytes */
-uint32_t Radio::sendData(uint8_t* data, uint32_t len){
-    debugprint("sendData()");
-    sendFifo_mutex.lock();
-    uint32_t tx_len =  fifo_write_bytes(data, &sendFifo, len);
-    sendFifo_mutex.unlock();
-    return tx_len;
-}
+// /* writes data to sendfifo and returns number of written bytes */
+// uint32_t Radio::sendData(uint8_t* data, uint32_t len){
+//     debugprint("sendData()");
+//     sendFifo_mutex.lock();
+//     uint32_t tx_len =  fifo_write_bytes(data, &sendFifo, len);
+//     sendFifo_mutex.unlock();
+//     return tx_len;
+// }
 
-int Radio::readPacket(char* data, int* len){
-    return 0;
-}
+// int Radio::readPacket(char* data, int* len){
+//     return 0;
+// }
 
 int Radio::sendPacket(char* data, int len){
     uint32_t txlen = SMP_Send((unsigned char*)data,len,transmitBuffer,sizeof(transmitBuffer), &messageStart);
@@ -62,9 +67,9 @@ int Radio::sendPacket(char* data, int len){
     }
 
     /* send data over radio */
-    if(sendData(messageStart, txlen) == txlen)
+    if(phy->transmit(messageStart,txlen) == txlen)
         return SUCCESS;
-    else
+    else 
         return ERROR;
 }
 
