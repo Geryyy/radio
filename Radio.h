@@ -13,13 +13,33 @@
 #include "radiophy.h"
 
 #define TX_MAX (127) 
+#define BUF_SIZE (256)
 
 typedef signed char (*SMPcallback_t)(fifo_t* buffer);
 
 class Radio{
 
+private:
+    enum state_e{
+        INIT = 0,
+        TX,
+        IDLE,
+        RX,
+        SLEEP
+    };
+
+    typedef struct timing_s{
+        float Tonair, Ttx, Tidle, Trx, Tsleep;
+    }timing_t;
+
+    state_e state;
+    timing_t timing;
+    CircularBuffer<uint8_t, BUF_SIZE> TxBuf;
+    CircularBuffer<uint8_t, BUF_SIZE> RxBuf;
+
 public:
     Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, RadioPHY* radiophy, bool debug);
+    void run(float TZyklus);
 
     /* brief: call function periodically to transmit data in sendFifo and to receive Data to receiveFifo 
      *        pure virtual method -> has to be implemented in derived class 
@@ -35,7 +55,7 @@ public:
     // Callback<void(char*,int)>receivePacket;
     // int readPacket(char* data, int* len);
     int sendPacket(char* data, int len);
-    int readPacket(char* data, int maxlen);
+    int readPacket(void);
     bool hasreceived();
 
 

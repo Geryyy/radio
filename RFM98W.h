@@ -139,6 +139,7 @@ public:
     int getpacketlength();
     int transmit(uint8_t* data, uint16_t len);
     int setreceive(void);
+    int lora_setReceiveSingle(void);
     int sleep();
     int checkrxdata();
     uint16_t getrxdata(uint8_t* data, uint16_t maxlen);
@@ -162,7 +163,7 @@ private:
     uint32_t blockSendTimeout;
 
     uint32_t beginnToWaitTimestamp;
-    int packetlength;
+    // int packetlength;
 
 
     void debugprint(const char* msg);

@@ -81,7 +81,7 @@ int RFM98W::setreceive(void){
 }
 
 int RFM98W::sleep(){
-	lora_setSleep();
+	lora_setIdle();// lora_setSleep();
 	return 1;
 }
 
@@ -447,6 +447,27 @@ int RFM98W::lora_setReceive()
 
 	return SUCCESS;
 }
+
+
+
+int RFM98W::lora_setReceiveSingle()
+{
+	debugprint("lora_setReceiveSingle()");
+
+	if(!lora_ready())
+		return ERROR;
+
+	lora_writeRegister(REG_DIO_MAPPING_1, 0);
+	if(lora_getMode() != (MODE_LONG_RANGE_MODE | MODE_RX_SINGLE))
+	{
+		lora_writeRegister(REG_PAYLOAD_LENGTH, lora_getMessageSize());
+		lora_writeRegister(REG_FIFO_ADDR_PTR, 0);
+		lora_writeRegister(REG_OP_MODE, MODE_LONG_RANGE_MODE | MODE_RX_SINGLE);
+	}
+	return SUCCESS;
+}
+
+
 
 uint8_t RFM98W::lora_parsePacket() {
 	uint8_t packetLength = 0;
