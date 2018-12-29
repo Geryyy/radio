@@ -7,6 +7,8 @@ class RadioPHY{
     // Radio_PHY();
 
 public:
+    uint8_t *rxdata;
+    uint16_t *rxlen;
     virtual int getpacketlength() = 0;
     virtual int transmit(uint8_t* data, uint16_t len) = 0;
     virtual int setreceive(void) = 0;

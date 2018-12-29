@@ -104,6 +104,9 @@ typedef enum
 class RFM98W : public RadioPHY
 {
 public:
+    #define MAX_RX_BUFFER_SIZE (2*LORA_PACKET_LENGTH)
+    uint8_t rxbuffer[MAX_RX_BUFFER_SIZE];
+    uint16_t rxbufferlen;
 
 
 private:
@@ -114,7 +117,11 @@ private:
     // Reset
     DigitalOut reset;
     // Interrupt
-    DigitalIn dio0;
+    InterruptIn dio0;
+
+    // eventqueue and thread to handle isr calls outside isr context
+    EventQueue queue;
+    Thread eventThread;
 
     bool _debug;
 
@@ -128,7 +135,7 @@ private:
 /* Methods */
 public:
     RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESET, PinName INTERRUPT, uint32_t timeout = 200,  bool debug = false);
-
+    
     int getpacketlength();
     int transmit(uint8_t* data, uint16_t len);
     int setreceive(void);
@@ -169,7 +176,7 @@ private:
     void lora_writeRegisterSafe(uint8_t address, uint8_t value);
     uint8_t lora_singleTransfer(uint8_t address, uint8_t value);
     void lora_fifoTransfer(uint8_t address, const uint8_t* values, uint8_t length);
-    void PIOINT1_IRQHandler(void);
+    void DIO0_IRQHandler(void);
     void lora_poll(void);
 
     loraStatus_e lora_getStatus();

@@ -35,6 +35,8 @@ public:
     // Callback<void(char*,int)>receivePacket;
     // int readPacket(char* data, int* len);
     int sendPacket(char* data, int len);
+    int readPacket(char* data, int maxlen);
+    bool hasreceived();
 
 
 

@@ -45,9 +45,31 @@ uint32_t Radio::readData(uint8_t* data, uint32_t max_len){
 //     return tx_len;
 // }
 
-// int Radio::readPacket(char* data, int* len){
-//     return 0;
-// }
+int Radio::readPacket(char* data, int maxlen){
+    debugprint("Radio::readPacket()");
+    uint16_t len = *(phy->rxlen);
+    if(len > 0 && len < maxlen){
+        for(int i=0; i<len; i++){
+            uint8_t c = phy->rxdata[i]; 
+            data[i] = c;
+            if(_debug){
+                printf("%c",(char)c);
+            }
+
+        }
+    }
+    debugprint("\n"); //newline
+    // mark data as read
+    *(phy->rxlen) = 0;
+    return len; 
+}
+
+bool Radio::hasreceived(){
+    if(_debug){
+        // printf("Radio::hasreceived(): phy->rxlen = %d\n",*(phy->rxlen));
+    }
+    return ((*(phy->rxlen) > 0) ? true : false);
+}
 
 int Radio::sendPacket(char* data, int len){
     uint32_t txlen = SMP_Send((unsigned char*)data,len,transmitBuffer,sizeof(transmitBuffer), &messageStart);
@@ -67,6 +89,7 @@ int Radio::sendPacket(char* data, int len){
     }
 
     /* send data over radio */
+    /* todo write to buffer, transmit through sequencer */
     if(phy->transmit(messageStart,txlen) == txlen)
         return SUCCESS;
     else 

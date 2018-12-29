@@ -16,12 +16,16 @@ RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESE
 
 
 	packetlength = LORA_PACKET_LENGTH; 
+	rxdata = &rxbuffer[0];
+	rxlen = &rxbufferlen;
+	
 
 	blockSendTimeout = timeout;
     spi.format(8,0); /* 8 bits; mode 0: CPOL = 0, CPHA = 0 */
 	spi.frequency(1000000);
 
 	dio0.mode(PullUp);
+	dio0.rise(callback(this, &RFM98W::DIO0_IRQHandler));
 
 	/* todo: implement */
 	loraSettings_t lora_settings;
@@ -41,6 +45,7 @@ RFM98W::RFM98W(PinName MOSI, PinName MISO, PinName SCK, PinName CS, PinName RESE
 	lora_init(&lora_settings);
 
 	// startreceive();
+	eventThread.start(callback(&queue, &EventQueue::dispatch_forever));
 }
 
 int RFM98W::getpacketlength(){
@@ -161,7 +166,7 @@ int RFM98W::sendBytes(unsigned char *data, int len){
 
 	debugprint("sendBytes()");
 
-	lora_poll();
+	// lora_poll();
 
 	if (lora_getStatus() == send)
 		return ERROR;
@@ -319,10 +324,15 @@ void RFM98W::lora_fifoTransfer(uint8_t address, const uint8_t* values, uint8_t l
 	loraLocked = 0;
 }
 
-void RFM98W::PIOINT1_IRQHandler(void)
+void RFM98W::DIO0_IRQHandler(void)
 {
 	// Chip_GPIO_ClearInts(LPC_GPIO, 1, 0x200);
-	lora_handleDio0Rise();
+
+	static DigitalOut LED(PC_12);
+	LED = !LED;
+
+	// then defer the handleDio0Rise call to the other thread
+ 	queue.call(callback(this, &RFM98W::lora_handleDio0Rise));
 }
 
 void RFM98W::lora_poll()
@@ -506,7 +516,12 @@ uint8_t RFM98W::lora_available() {
 	if(stat == send ||stat == disconnected)
 	return 0;
 	uint8_t reg;
-		reg = lora_readRegister(REG_RX_NB_BYTES);
+	reg = lora_readRegister(REG_RX_NB_BYTES);
+	
+	if(_debug){
+		printf("\t nr of bytes available: %d\n",reg-_packetIndex);
+	}
+
 	return (reg - _packetIndex);
 }
 
@@ -584,6 +599,8 @@ void RFM98W::lora_handleDio0Rise()
 		// if (_transmitCompleteClb) _transmitCompleteClb();
 		lora_sendDataComplete();
 	}
+	/* todo test */
+	lora_setReceive(); 
 }
 
  void RFM98W::lora_receiveData(void) {
@@ -600,11 +617,14 @@ void RFM98W::lora_handleDio0Rise()
 		}
 	}
 
-	/* todo: move smp to radio class */
-	// receiveFifo_mutex.lock();
-	// fifo_write_bytes(data, &receiveFifo, dataSize);
-	// SMP_RecieveInBytes(data, dataSize, &smp);
-	// receiveFifo_mutex.unlock();
+	/* copy data to be accessed by radio object */
+	if(dataSize > 0 && dataSize <= MAX_RX_BUFFER_SIZE){
+		debugprint("----> copy data to rxbuffer <----");
+		for(int i=0; i<dataSize; i++){
+			rxbuffer[i] = data[i];
+		}
+		rxbufferlen = dataSize;
+	}
 }
 
  void RFM98W::lora_sendDataComplete(void){
@@ -613,7 +633,7 @@ void RFM98W::lora_handleDio0Rise()
 	/* todo: move smp to radio class */
 	// if(fifo_datasize(&sendFifo) < LORA_PACKET_LENGTH)
 	// 	lora_setReceive(); //Goto receive after transmition
-#warning implementation might be wrong...
+
 }
 
 
