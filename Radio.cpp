@@ -5,12 +5,8 @@
 #include <stdlib.h>
 #include <cstddef>
 #include "logprintf.h"
-
-
 /* for LOG and WARNING macros: */
 #define MODULE_NAME "RADIO"
-
-
 
 Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, RadioPHY* radiophy, mode_e mode, bool debug){
     _debug = debug;
@@ -18,11 +14,11 @@ Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback,
     // timing
     timing.Tonair = 0.5; // seconds .. time to transmit lora packet over air
     timing.Ttx = timing.Tonair;
-    timing.Tidle = 4*timing.Tonair;
-    timing.Trx = 3*timing.Tonair;
-    timing.Tsleep = 4*timing.Tonair;
+    timing.Tidle = 0*timing.Tonair; // 4
+    timing.Trx = 10*timing.Tonair; // 3
+    timing.Tsleep = 0*timing.Tonair; // 4
 
-    debugprint("Radio()");
+    debugprint("Radio::Radio()");
     // radio physical layer object
     phy = radiophy;
     state = INIT;
@@ -104,7 +100,6 @@ void Radio::run(float TZyklus){
     if(state == RX){
         // receive data
         int len = readPacket();
-
         // sync state machine with remote/host's state machine
         if(len>0){
             t = 0.0;
@@ -139,7 +134,7 @@ void Radio::run(float TZyklus){
     if(_debug){
         // if(state!=mstate)
         {
-            xprintf("Radio::run() mode=");
+            xprintf("DEBUG: Radio::run() mode=");
             switch(opmode){
                 case Radio::remote: xprintf("remote  "); break;
                 case Radio::host:   xprintf("host  "); break;
@@ -157,58 +152,34 @@ void Radio::run(float TZyklus){
             xprintf("  t=%5.2f\n",t);
         }
     }
-
-    
 }
 
-
+// delete ?
 uint32_t Radio::readData(uint8_t* data, uint32_t max_len){
-    debugprint("readData()");
+    debugprint("Radio::readData()");
     receiveFifo_mutex.lock();
     uint32_t rx_len = fifo_read_bytes(data, &receiveFifo, max_len);
     receiveFifo_mutex.unlock();
     return rx_len;
 }
 
-// /* writes data to sendfifo and returns number of written bytes */
-// uint32_t Radio::sendData(uint8_t* data, uint32_t len){
-//     debugprint("sendData()");
-//     sendFifo_mutex.lock();
-//     uint32_t tx_len =  fifo_write_bytes(data, &sendFifo, len);
-//     sendFifo_mutex.unlock();
-//     return tx_len;
-// }
 
 int Radio::readPacket(){
-    debugprint("Radio::readPacket()");
-    // uint16_t len = *(phy->rxlen);
-    // if(len > 0 && len < maxlen){
-    //     for(int i=0; i<len; i++){
-    //         uint8_t c = phy->rxdata[i]; 
-    //         data[i] = c;
-    //         if(_debug){
-    //             xprintf("%c",(char)c);
-    //         }
-
-    //     }
-    // }
-    // debugprint("\n"); //newline
-    // // mark data as read
-    // *(phy->rxlen) = 0;
-    // return len; 
-
-
-    uint16_t len = *(phy->rxlen);
     
+    uint16_t len = *(phy->rxlen);
+    if(_debug){
+        xprintf("DEBUG: Radio::readPacket() \tlen=%d data: ",len);
+    }
+
     for(int i=0; i<len; i++){
         uint8_t c = phy->rxdata[i]; 
         SMP_RecieveInBytes(&c, 1, &smp);
         if(_debug){
-            xprintf("%c",(char)c);
+            xprintf("<%d>:%c",i,(char)c);
         }
     }
-    
-    debugprint("\n"); //newline
+    xprintf("\n");
+
     // mark data as read
     *(phy->rxlen) = 0;
     return len; 
@@ -226,36 +197,31 @@ int Radio::sendPacket(char* data, int len){
 
      /* in debug mode: print input data pointer and data length in terminal */
     if(_debug){
-        xprintf("LoraRadio::write(%p, %d)\n",data,len);
-        xprintf("\tinput data: ");
+        xprintf("DEBUG: Radio::sendPacket() \tlen=%d input data: ",len);
         for(int i = 0;i<len;i++){
             xprintf("%c",data[i]);
         }
-        xprintf("\n\tSMP frame:  ");
+        xprintf("\tSMP frame:  ");
         for(uint32_t i = 0;i<txlen;i++){
             xprintf("%.2x",messageStart[i]);
         }
-        xprintf("\n\n");
+        xprintf("\n");
     }
 
     /* send data over radio */
     int i;
     for(i = 0;i<txlen;i++){
-        if(TxBuf.full())
+        if(TxBuf.full()){
+            debugprint("RADIO::sendPacket() ERROR: TXBUF FULL!");
             break;
+        }
         TxBuf.push(messageStart[i]);
     }
     return i;
-    // if(phy->transmit(messageStart,txlen) == txlen)
-    //     return SUCCESS;
-    // else 
-    //     return ERROR;
 }
 
 void Radio::debugprint(const char* msg){
     if(_debug){
-        // debug_mutex.lock();
-        xprintf("DEBUG:\t%s\n",msg);
-        // debug_mutex.unlock();
+        xprintf("DEBUG: %s\n",msg);
     }
 }
