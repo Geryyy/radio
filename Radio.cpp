@@ -154,13 +154,23 @@ void Radio::run(float TZyklus){
     }
 }
 
-// delete ?
+
 uint32_t Radio::readData(uint8_t* data, uint32_t max_len){
     debugprint("Radio::readData()");
-    receiveFifo_mutex.lock();
-    uint32_t rx_len = fifo_read_bytes(data, &receiveFifo, max_len);
-    receiveFifo_mutex.unlock();
-    return rx_len;
+    // receiveFifo_mutex.lock();
+    // uint32_t rx_len = fifo_read_bytes(data, &receiveFifo, max_len);
+    // receiveFifo_mutex.unlock();
+    int i = 0;
+    while(!RxBuf.empty()){
+        if(i > max_len){
+            break;
+        }
+        else{
+            RxBuf.pop(data[i]);
+        }
+        i++;
+    }
+    return i;
 }
 
 
@@ -173,6 +183,7 @@ int Radio::readPacket(){
 
     for(int i=0; i<len; i++){
         uint8_t c = phy->rxdata[i]; 
+        RxBuf.push(c); // save raw data for readData() function
         SMP_RecieveInBytes(&c, 1, &smp);
         if(_debug){
             xprintf("<%d>:%c",i,(char)c);
@@ -216,6 +227,29 @@ int Radio::sendPacket(char* data, int len){
             break;
         }
         TxBuf.push(messageStart[i]);
+    }
+    return i;
+}
+
+uint32_t Radio::sendData(uint8_t* data, uint32_t len){
+
+     /* in debug mode: print input data pointer and data length in terminal */
+    if(_debug){
+        xprintf("DEBUG: Radio::sendData() \tlen=%d input data: ",len);
+        for(int i = 0;i<len;i++){
+            xprintf("%c",data[i]);
+        }
+        xprintf("\n");
+    }
+
+    /* send data over radio */
+    int i;
+    for(i = 0;i<len;i++){
+        if(TxBuf.full()){
+            debugprint("RADIO::sendData() ERROR: TXBUF FULL!");
+            break;
+        }
+        TxBuf.push(data[i]);
     }
     return i;
 }
