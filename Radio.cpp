@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <cstddef>
+#include "logprintf.h"
 
 
 
@@ -15,9 +16,9 @@ Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback,
     // timing
     timing.Tonair = 0.5; // seconds .. time to transmit lora packet over air
     timing.Ttx = timing.Tonair;
-    timing.Tidle = 1*timing.Tonair;
-    timing.Trx = 4*timing.Tonair;
-    timing.Tsleep = 1*timing.Tonair;
+    timing.Tidle = 0*timing.Tonair;
+    timing.Trx = 6*timing.Tonair;
+    timing.Tsleep = 0*timing.Tonair;
 
     debugprint("Radio()");
     // radio physical layer object
@@ -44,43 +45,52 @@ void Radio::run(float TZyklus){
      * INIT --> TX --> IDLE --> RX --> SLEEP ---
      *           ^_____________________________|
      */
-    if(state == INIT && t>0.0){
-        // do init things
-        state = TX;
-    }
-    else if(state == TX && t > timing.Ttx){
+    do{
+        // time in current state
+        if(state != mstate) 
+            t = 0.0;
+        else 
+            t = t + TZyklus;
+
+        // update state merker
+        mstate = state;
         
+        // state machine
+        if(state == INIT && t>0.0){
+            // do init things
+            state = TX;
+        }
+        else if(state == TX && t > timing.Ttx){
+            
 
-        state = IDLE;
-        //set radio to idle
-        // phy->sleep();
-    }
-    else if(state == IDLE && t > timing.Tidle){
+            state = IDLE;
+            //set radio to idle
+            // phy->sleep();
+        }
+        else if(state == IDLE && t > timing.Tidle){
 
-        state = RX;
-        // set radio to receive mode
-        phy->setreceive();
-    }
-    else if(state == RX && t > timing.Trx){
+            state = RX;
+            // set radio to receive mode
+            phy->setreceive();
+        }
+        else if(state == RX && t > timing.Trx){
 
-        // readPacket();
+            // readPacket();
 
+            
+            state = SLEEP;
+            // set radio to sleep
+            // phy->sleep();
+        }
+        else if(state == SLEEP && t > timing.Tsleep){
+            // wake up radio
+            state = TX;
+            
+        }
+        // else;
         
-        state = SLEEP;
-        // set radio to sleep
-        // phy->sleep();
-    }
-    else if(state == SLEEP && t > timing.Tsleep){
-        // wake up radio
-        state = TX;
         
-    }
-    // else;
-
-    if(state != mstate) 
-        t = 0.0;
-    else 
-        t = t + TZyklus;
+    }while(mstate != state);
 
     // actions 
     if(state == RX){
@@ -91,7 +101,7 @@ void Radio::run(float TZyklus){
     if(state == IDLE){
         int rssi = phy->getrssi();
         if(_debug){
-            printf("rssi: %d\n",rssi);
+            xprintf("rssi: %d\n",rssi);
         }
     }
 
@@ -116,21 +126,20 @@ void Radio::run(float TZyklus){
     if(_debug){
         // if(state!=mstate)
         {
-            printf("Radio::run() state = ");
+            xprintf("Radio::run() state = ");
             switch(state){
-                case INIT:  printf("INIT"); break;
-                case TX:  printf("TX"); break;
-                case IDLE:  printf("IDLE"); break;
-                case RX:  printf("RX"); break;
-                case SLEEP:  printf("SLEEP"); break;
-                default: printf("default");
+                case INIT:  xprintf("INIT"); break;
+                case TX:  xprintf("TX"); break;
+                case IDLE:  xprintf("IDLE"); break;
+                case RX:  xprintf("RX"); break;
+                case SLEEP:  xprintf("SLEEP"); break;
+                default: xprintf("default");
             }
-            printf("\n");
+            xprintf("\n");
         }
     }
 
-    // update state merker
-    mstate = state;
+    
 }
 
 
@@ -159,7 +168,7 @@ int Radio::readPacket(){
     //         uint8_t c = phy->rxdata[i]; 
     //         data[i] = c;
     //         if(_debug){
-    //             printf("%c",(char)c);
+    //             xprintf("%c",(char)c);
     //         }
 
     //     }
@@ -176,7 +185,7 @@ int Radio::readPacket(){
         uint8_t c = phy->rxdata[i]; 
         SMP_RecieveInBytes(&c, 1, &smp);
         if(_debug){
-            printf("%c",(char)c);
+            xprintf("%c",(char)c);
         }
     }
     
@@ -188,7 +197,7 @@ int Radio::readPacket(){
 
 bool Radio::hasreceived(){
     if(_debug){
-        // printf("Radio::hasreceived(): phy->rxlen = %d\n",*(phy->rxlen));
+        // xprintf("Radio::hasreceived(): phy->rxlen = %d\n",*(phy->rxlen));
     }
     return ((*(phy->rxlen) > 0) ? true : false);
 }
@@ -198,16 +207,16 @@ int Radio::sendPacket(char* data, int len){
 
      /* in debug mode: print input data pointer and data length in terminal */
     if(_debug){
-        printf("LoraRadio::write(%p, %d)\n",data,len);
-        printf("\tinput data: ");
+        xprintf("LoraRadio::write(%p, %d)\n",data,len);
+        xprintf("\tinput data: ");
         for(int i = 0;i<len;i++){
-            printf("%c",data[i]);
+            xprintf("%c",data[i]);
         }
-        printf("\n\tSMP frame:  ");
+        xprintf("\n\tSMP frame:  ");
         for(uint32_t i = 0;i<txlen;i++){
-            printf("%.2x",messageStart[i]);
+            xprintf("%.2x",messageStart[i]);
         }
-        printf("\n\n");
+        xprintf("\n\n");
     }
 
     /* send data over radio */
@@ -226,8 +235,8 @@ int Radio::sendPacket(char* data, int len){
 
 void Radio::debugprint(const char* msg){
     if(_debug){
-        debug_mutex.lock();
-        printf("DEBUG:\t%s\n",msg);
-        debug_mutex.unlock();
+        // debug_mutex.lock();
+        xprintf("DEBUG:\t%s\n",msg);
+        // debug_mutex.unlock();
     }
 }

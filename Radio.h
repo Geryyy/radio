@@ -62,7 +62,7 @@ public:
 
 protected:
     bool _debug;
-    Mutex debug_mutex;
+    // Mutex debug_mutex;
 
     Mutex sendFifo_mutex;
     Mutex receiveFifo_mutex;

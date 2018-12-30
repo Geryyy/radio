@@ -1,5 +1,8 @@
 #include "RFM98W.h"
 #include "globals.h"
+#include "logprintf.h"
+
+
 
 /* libs: 
 * https://github.com/sandeepmistry/arduino-LoRa/blob/master/src/LoRa.cpp
@@ -104,7 +107,7 @@ float RFM98W::getsnr(){
 
 void RFM98W::debugprint(const char* msg){
 	if(_debug){
-		printf("DEBUG:\t%s\n",msg);
+		xprintf("DEBUG:\t%s\n",msg);
 	}
 }
 
@@ -540,7 +543,7 @@ uint8_t RFM98W::lora_available() {
 	reg = lora_readRegister(REG_RX_NB_BYTES);
 	
 	if(_debug){
-		printf("\t nr of bytes available: %d\n",reg-_packetIndex);
+		xprintf("\t nr of bytes available: %d\n",reg-_packetIndex);
 	}
 
 	return (reg - _packetIndex);
@@ -602,7 +605,7 @@ void RFM98W::lora_handleDio0Rise()
 	lora_writeRegister(REG_IRQ_FLAGS, irqFlags);
 
 	if(_debug){
-		printf("lora irqFlags: %d\n", irqFlags);
+		xprintf("lora irqFlags: %d\n", irqFlags);
 	}
 
 	if (irqFlags & IRQ_RX_DONE_MASK)
@@ -632,9 +635,9 @@ void RFM98W::lora_handleDio0Rise()
 	dataSize = lora_readBytes(data, LORA_PACKET_LENGTH);
 
 	if(_debug){
-		printf("received Bytes:\n");
+		xprintf("received Bytes:\n");
 		for(int i = 0; i<dataSize; i++){
-			printf("%c",data[i]);
+			xprintf("%c",data[i]);
 		}
 	}
 
