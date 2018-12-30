@@ -1,4 +1,3 @@
-
 #include "Radio.h"
 #include "radiophy.h"
 #include "mbed.h"
@@ -8,22 +7,26 @@
 #include "logprintf.h"
 
 
+/* for LOG and WARNING macros: */
+#define MODULE_NAME "RADIO"
 
 
-Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, RadioPHY* radiophy, bool debug){
+
+Radio::Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, RadioPHY* radiophy, mode_e mode, bool debug){
     _debug = debug;
 
     // timing
     timing.Tonair = 0.5; // seconds .. time to transmit lora packet over air
     timing.Ttx = timing.Tonair;
-    timing.Tidle = 0*timing.Tonair;
-    timing.Trx = 6*timing.Tonair;
-    timing.Tsleep = 0*timing.Tonair;
+    timing.Tidle = 4*timing.Tonair;
+    timing.Trx = 3*timing.Tonair;
+    timing.Tsleep = 4*timing.Tonair;
 
     debugprint("Radio()");
     // radio physical layer object
     phy = radiophy;
     state = INIT;
+    opmode = mode;
 
     // SMP
     fifo_init(&fifo,buffer,sizeof(buffer));
@@ -56,46 +59,56 @@ void Radio::run(float TZyklus){
         mstate = state;
         
         // state machine
-        if(state == INIT && t>0.0){
-            // do init things
-            state = TX;
-        }
-        else if(state == TX && t > timing.Ttx){
-            
-
-            state = IDLE;
-            //set radio to idle
-            // phy->sleep();
-        }
-        else if(state == IDLE && t > timing.Tidle){
-
-            state = RX;
-            // set radio to receive mode
-            phy->setreceive();
-        }
-        else if(state == RX && t > timing.Trx){
-
-            // readPacket();
-
-            
-            state = SLEEP;
-            // set radio to sleep
-            // phy->sleep();
-        }
-        else if(state == SLEEP && t > timing.Tsleep){
-            // wake up radio
-            state = TX;
-            
-        }
-        // else;
-        
-        
+        switch(opmode){
+            case Radio::remote:{
+                    if(state == INIT && t>0.0){
+                        state = TX;
+                    }
+                    else if(state == TX && t > timing.Ttx){
+                        state = IDLE;                     
+                        phy->sleep();
+                    }
+                    else if(state == IDLE && t > timing.Tidle){
+                        state = RX;
+                        phy->setreceive();
+                    }
+                    else if(state == RX && t > timing.Trx){
+                        state = SLEEP;
+                        phy->sleep();
+                    }
+                    else if(state == SLEEP && t > timing.Tsleep){
+                        state = TX;
+                    }
+                    //else;
+                }  
+                break;
+            case Radio::host:{
+                    if(state == INIT && t>0.0){
+                        state = TX;
+                    }
+                    else if(state == TX && t > (timing.Ttx)){
+                        state = RX; 
+                        phy->setreceive(); 
+                    }
+                    else if(state == RX && t > (timing.Tidle + timing.Trx + timing.Tsleep)){
+                        state = TX;
+                    }
+                    //else;
+                }
+                break;
+            default: LOG("Radio::run() invalid mode");
+        }  
     }while(mstate != state);
 
     // actions 
     if(state == RX){
         // receive data
-        readPacket();
+        int len = readPacket();
+
+        // sync state machine with remote/host's state machine
+        if(len>0){
+            t = 0.0;
+        }
     }
 
     if(state == IDLE){
@@ -126,16 +139,22 @@ void Radio::run(float TZyklus){
     if(_debug){
         // if(state!=mstate)
         {
-            xprintf("Radio::run() state = ");
-            switch(state){
-                case INIT:  xprintf("INIT"); break;
-                case TX:  xprintf("TX"); break;
-                case IDLE:  xprintf("IDLE"); break;
-                case RX:  xprintf("RX"); break;
-                case SLEEP:  xprintf("SLEEP"); break;
-                default: xprintf("default");
+            xprintf("Radio::run() mode=");
+            switch(opmode){
+                case Radio::remote: xprintf("remote  "); break;
+                case Radio::host:   xprintf("host  "); break;
+                default:            xprintf("invalid mode  ");
             }
-            xprintf("\n");
+            xprintf("state=");
+            switch(state){
+                case INIT:   xprintf("INIT "); break;
+                case TX:     xprintf("TX   "); break;
+                case IDLE:   xprintf("IDLE "); break;
+                case RX:     xprintf("RX   "); break;
+                case SLEEP:  xprintf("SLEEP"); break;
+                default:     xprintf("default");
+            }
+            xprintf("  t=%5.2f\n",t);
         }
     }
 

@@ -12,12 +12,19 @@
 #include "globals.h"
 #include "radiophy.h"
 
+
 #define TX_MAX (127) 
 #define BUF_SIZE (256)
 
 typedef signed char (*SMPcallback_t)(fifo_t* buffer);
 
 class Radio{
+
+public:
+    enum mode_e{
+        remote = 0, /* saves energy */
+        host /* does not care about energy consumption */
+    };
 
 private:
     enum state_e{
@@ -28,17 +35,19 @@ private:
         SLEEP
     };
 
+
     typedef struct timing_s{
         float Tonair, Ttx, Tidle, Trx, Tsleep;
     }timing_t;
 
     state_e state;
     timing_t timing;
+    mode_e opmode;
     CircularBuffer<uint8_t, BUF_SIZE> TxBuf;
     CircularBuffer<uint8_t, BUF_SIZE> RxBuf;
 
 public:
-    Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, RadioPHY* radiophy, bool debug);
+    Radio(SMPcallback_t frameReadyCallback, SMPcallback_t rogueFrameCallback, RadioPHY* radiophy, mode_e mode, bool debug);
     void run(float TZyklus);
 
     /* brief: call function periodically to transmit data in sendFifo and to receive Data to receiveFifo 
