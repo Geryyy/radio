@@ -114,6 +114,10 @@ void Radio::run(float TZyklus){
     }
 
     if(state == TX){
+        // debug
+        if(_debug){
+            xprintf("DEBUG: TxBuf size=%d\n",TxBuf.size());
+        }
         // transmit data
         if(!TxBuf.empty()){
             int packetlength = phy->packetlength;
