@@ -102,7 +102,7 @@ void Radio::run(float TZyklus){
         int len = readPacket();
         // sync state machine with remote/host's state machine
         if(len>0){
-            t = 0.0;
+            t = timing.Trx/2.0; // slight timing offset
         }
     }
 
@@ -165,8 +165,12 @@ uint32_t Radio::readData(uint8_t* data, uint32_t max_len){
     // uint32_t rx_len = fifo_read_bytes(data, &receiveFifo, max_len);
     // receiveFifo_mutex.unlock();
     int i = 0;
+
     while(!RxBuf.empty()){
-        if(i > max_len){
+        // if(_debug){
+        //     xprintf("i=%d maxlen=%d &data=%p sizeof(data)=%d RxBuf.len=%d\n",i,max_len,data,LORA_PACKET_LENGTH,RxBuf.size());
+        // }
+        if(i == (max_len-1)){
             break;
         }
         else{
@@ -238,13 +242,13 @@ int Radio::sendPacket(char* data, int len){
 uint32_t Radio::sendData(uint8_t* data, uint32_t len){
 
      /* in debug mode: print input data pointer and data length in terminal */
-    if(_debug){
-        xprintf("DEBUG: Radio::sendData() \tlen=%d input data: ",len);
-        for(int i = 0;i<len;i++){
-            xprintf("%c",data[i]);
-        }
-        xprintf("\n");
-    }
+    // if(_debug){
+    //     xprintf("DEBUG: Radio::sendData() \tlen=%d input data: ",len);
+    //     for(int i = 0;i<len;i++){
+    //         xprintf("%c",data[i]);
+    //     }
+    //     xprintf("\n");
+    // }
 
     /* send data over radio */
     int i;
