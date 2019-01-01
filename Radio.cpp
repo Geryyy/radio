@@ -102,7 +102,7 @@ void Radio::run(float TZyklus){
         int len = readPacket();
         // sync state machine with remote/host's state machine
         if(len>0){
-            t = timing.Trx/2.0; // slight timing offset
+            t = 0.0; //timing.Trx/2.0; // slight timing offset
         }
     }
 
