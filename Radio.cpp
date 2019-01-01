@@ -102,7 +102,15 @@ void Radio::run(float TZyklus){
         int len = readPacket();
         // sync state machine with remote/host's state machine
         if(len>0){
-            t = 0.0; //timing.Trx/2.0; // slight timing offset
+            switch(opmode){
+                case Radio::remote:
+                    // do nothing
+                    break;
+                case Radio::host:
+                    t = timing.Trx + timing.Tsleep - timing.Tonair;   
+                    break;
+                default: LOG("Radio::run() invalid mode");        
+            }    
         }
     }
 
