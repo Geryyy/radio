@@ -329,11 +329,6 @@ void RFM98W::lora_fifoTransfer(uint8_t address, const uint8_t* values, uint8_t l
 
 void RFM98W::DIO0_IRQHandler(void)
 {
-	// Chip_GPIO_ClearInts(LPC_GPIO, 1, 0x200);
-
-	static DigitalOut LED(PC_12);
-	LED = !LED;
-
 	// then defer the handleDio0Rise call to the other thread
  	queue.call(callback(this, &RFM98W::lora_handleDio0Rise));
 }
