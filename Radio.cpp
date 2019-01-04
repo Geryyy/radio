@@ -115,7 +115,7 @@ void Radio::run(float TZyklus){
     }
 
     if(state == IDLE){
-        int rssi = phy->getrssi();
+        rssi = phy->getrssi();
         if(_debug){
             xprintf("rssi: %d\n",rssi);
         }
@@ -211,7 +211,10 @@ int Radio::readPacket(){
             xprintf("<%d>:%c",i,(char)c);
         }
     }
-    xprintf("\n");
+
+    if(_debug){
+        xprintf("\n");
+    }
 
     // mark data as read
     *(phy->rxlen) = 0;
